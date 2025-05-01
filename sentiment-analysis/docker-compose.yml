@@ -1,0 +1,84 @@
+services:
+  scraper:
+    build:
+      context: ./services/scraper
+    container_name: sentiment_scraper
+    restart: unless-stopped
+    volumes:
+      - ./data:/data
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -h db || exit 0"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  analysis:
+    build:
+      context: ./services/analysis
+    container_name: sentiment_analysis
+    restart: unless-stopped
+    volumes:
+      - ./data:/data
+    depends_on:
+      db:
+        condition: service_healthy
+
+  alert_system:
+    build:
+      context: ./services/alert_system
+    container_name: sentiment_alert_system
+    restart: unless-stopped
+    ports:
+    - "5000:5000"
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:13
+    container_name: sentiment_db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: sentiment_analysis_db
+    volumes:
+      - sentiment_db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d sentiment_analysis_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:latest
+    container_name: sentiment_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+
+  dashboard:
+    build:
+      context: ./services/dashboard
+    container_name: sentiment_dashboard
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./services/dashboard:/app
+      - /app/node_modules
+    depends_on:
+      - scraper
+      - analysis
+      - alert_system
+
+volumes:
+  sentiment_db_data:

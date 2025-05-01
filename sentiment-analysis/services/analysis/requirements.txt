@@ -1,0 +1,4 @@
+vaderSentiment==3.3.2
+psycopg2-binary==2.9.6
+transformers==4.30.2
+torch==2.0.1

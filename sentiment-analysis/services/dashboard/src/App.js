@@ -9,7 +9,7 @@ function App() {
     const fetchAlerts = async () => {
       try {
         // Use the actual accessible URL for your backend
-        const response = await fetch('http://ap7.humanbrain.in:5000/alerts');
+        const response = await fetch('http://localhost:5000/alerts');
         
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
